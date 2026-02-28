@@ -1,0 +1,25 @@
+[project]
+name = "xueqiu-backup"
+version = "0.1.0"
+description = "雪球关注内容分钟级本地备份"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "httpx>=0.28.1",
+  "pydantic>=2.11.7",
+  "python-dotenv>=1.1.1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.4.1",
+  "pytest-cov>=6.2.1",
+]
+
+browser = [
+  "playwright>=1.53.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

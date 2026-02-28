@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+.env
+cookies.json
+logs/*.log
+data/backup.db
+data/raw/
+data/alerts/
