@@ -186,12 +186,18 @@ class BackupRepo:
         with self.connect() as conn:
             posts = conn.execute("SELECT COUNT(*) AS c FROM posts").fetchone()["c"]
             snapshots = conn.execute("SELECT COUNT(*) AS c FROM post_snapshots").fetchone()["c"]
-            deletions = conn.execute("SELECT COUNT(*) AS c FROM deletion_events").fetchone()["c"]
+            deletions = conn.execute(
+                "SELECT COUNT(*) AS c FROM posts WHERE visible_status = 'deleted_suspected'"
+            ).fetchone()["c"]
+            deletion_events_total = conn.execute(
+                "SELECT COUNT(*) AS c FROM deletion_events"
+            ).fetchone()["c"]
             polls = conn.execute("SELECT COUNT(*) AS c FROM poll_runs").fetchone()["c"]
             return {
                 "posts": int(posts),
                 "snapshots": int(snapshots),
                 "deletions": int(deletions),
+                "deletion_events_total": int(deletion_events_total),
                 "poll_runs": int(polls),
             }
 
@@ -276,15 +282,17 @@ class BackupRepo:
             ).fetchall()
             return list(rows)
 
-    def list_deletion_events(self, limit: int = 100) -> list[sqlite3.Row]:
+    def list_deletion_events(self, limit: int = 100, active_only: bool = True) -> list[sqlite3.Row]:
+        sql = """
+            SELECT d.post_id, d.detected_at, d.reason, d.last_seen_at, p.visible_status
+            FROM deletion_events d
+            JOIN posts p ON p.post_id = d.post_id
+        """
+        params: list[object] = []
+        if active_only:
+            sql += " WHERE p.visible_status = 'deleted_suspected'"
+        sql += " ORDER BY d.detected_at DESC LIMIT ?"
+        params.append(limit)
         with self.connect() as conn:
-            rows = conn.execute(
-                """
-                SELECT post_id, detected_at, reason, last_seen_at
-                FROM deletion_events
-                ORDER BY detected_at DESC
-                LIMIT ?
-                """,
-                (limit,),
-            ).fetchall()
+            rows = conn.execute(sql, params).fetchall()
             return list(rows)

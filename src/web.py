@@ -104,9 +104,9 @@ class WebApp:
     </div>
     <div class='card grid'>
       <div class='kpi'>帖子总数<b>{stats['posts']}</b></div>
-      <div class='kpi'>快照总数<b>{stats['snapshots']}</b></div>
-      <div class='kpi'>删帖事件<b>{stats['deletions']}</b></div>
+      <div class='kpi'>疑似删除<b>{stats['deletions']}</b></div>
       <div class='kpi'>轮询次数<b>{stats['poll_runs']}</b></div>
+      <div class='kpi'>快照总数<b>{stats['snapshots']}</b></div>
     </div>
     <div class='card'>
       <form method='get' action='/'>
@@ -213,7 +213,7 @@ class WebApp:
         return 200, body
 
     def render_deletions(self) -> str:
-        rows = self.repo.list_deletion_events(limit=200)
+        rows = self.repo.list_deletion_events(limit=200, active_only=True)
         body_rows = "\n".join(
             (
                 "<tr>"
@@ -226,12 +226,12 @@ class WebApp:
             for r in rows
         )
         if not body_rows:
-            body_rows = "<tr><td colspan='4'>暂无删帖事件</td></tr>"
+            body_rows = "<tr><td colspan='4'>暂无当前疑似删除事件</td></tr>"
         return f"""
 <!doctype html>
 <html lang='zh-CN'>
 <head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
-<title>删帖事件</title>
+<title>当前疑似删除事件</title>
 <style>
   body {{ font-family: "PingFang SC", "Microsoft YaHei", sans-serif; margin: 20px; background:#f7f9fc; color:#1a1f24; }}
   .card {{ background:#fff; border:1px solid #dbe3ea; border-radius:12px; padding:16px; }}
@@ -242,7 +242,8 @@ class WebApp:
 <body>
   <p><a href='/'>返回列表</a></p>
   <div class='card'>
-    <h2>删帖事件</h2>
+    <h2>当前疑似删除事件</h2>
+    <p style='color:#6b7886;font-size:13px;'>仅展示当前状态仍为“疑似删除”的内容（不含已恢复可见的历史事件）</p>
     <table>
       <thead><tr><th>post_id</th><th>原因</th><th>最后可见时间</th><th>检测时间</th></tr></thead>
       <tbody>{body_rows}</tbody>
