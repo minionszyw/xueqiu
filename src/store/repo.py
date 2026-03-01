@@ -1,16 +1,17 @@
 from __future__ import annotations
 
 from dataclasses import asdict
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 import json
 from pathlib import Path
 import sqlite3
 
 from src.models import PostNormalized
+from src.timezone_utils import now_shanghai
 
 
-def utc_now() -> datetime:
-    return datetime.now(timezone.utc)
+def local_now() -> datetime:
+    return now_shanghai()
 
 
 class BackupRepo:
@@ -34,7 +35,7 @@ class BackupRepo:
             return row["value"] if row else None
 
     def set_meta(self, key: str, value: str) -> None:
-        now = utc_now().isoformat()
+        now = local_now().isoformat()
         with self.connect() as conn:
             conn.execute(
                 """
@@ -139,7 +140,7 @@ class BackupRepo:
             )
 
     def list_recent_visible_posts(self, window_minutes: int) -> list[sqlite3.Row]:
-        threshold = (utc_now() - timedelta(minutes=window_minutes)).isoformat()
+        threshold = (local_now() - timedelta(minutes=window_minutes)).isoformat()
         with self.connect() as conn:
             rows = conn.execute(
                 """
@@ -153,7 +154,7 @@ class BackupRepo:
             return list(rows)
 
     def mark_missing(self, post_id: str, reason: str = "missing_from_feed") -> bool:
-        now = utc_now().isoformat()
+        now = local_now().isoformat()
         with self.connect() as conn:
             conn.execute(
                 "UPDATE posts SET visible_status = 'deleted_suspected' WHERE post_id = ?",

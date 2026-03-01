@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
 import json
 from pathlib import Path
 
 from src.fetch.follow_feed import FollowFeedFetcher
 from src.store.repo import BackupRepo
+from src.timezone_utils import now_shanghai
 
 
 class ReconcileWorker:
@@ -34,7 +34,7 @@ class ReconcileWorker:
         return detected
 
     def _append_alert(self, post_id: str) -> None:
-        now = datetime.now(timezone.utc)
+        now = now_shanghai()
         path = self.alert_dir / f"{now.strftime('%Y-%m-%d')}.log"
         payload = {
             "detected_at": now.isoformat(),

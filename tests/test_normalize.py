@@ -1,6 +1,5 @@
-from datetime import datetime, timezone
-
 from src.parser.normalize import normalize_post
+from src.timezone_utils import now_shanghai
 
 
 
@@ -12,7 +11,7 @@ def test_normalize_retweet_post() -> None:
         "user": {"id": 1, "screen_name": "alice"},
         "retweeted_status": {"id": 999},
     }
-    captured_at = datetime.now(timezone.utc)
+    captured_at = now_shanghai()
 
     post = normalize_post(raw, captured_at)
 
@@ -28,7 +27,7 @@ def test_normalize_retweet_post() -> None:
 
 def test_normalize_missing_id_returns_none() -> None:
     raw = {"text": "no id"}
-    captured_at = datetime.now(timezone.utc)
+    captured_at = now_shanghai()
 
     post = normalize_post(raw, captured_at)
 

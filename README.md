@@ -28,6 +28,7 @@
 - 每轮最多抓取 `3` 页（`MAX_PAGES_PER_POLL`）
 - 入库顺序：先写 `post_snapshots`，再更新 `posts`
 - 支持重启续跑（`meta_kv.feed_cursor`）
+- 时间统一使用 `Asia/Shanghai`（`+08:00`）时区
 
 ### 3) 删帖通知
 

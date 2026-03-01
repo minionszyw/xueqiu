@@ -1,12 +1,11 @@
-from datetime import datetime, timezone
-
 from src.models import PostNormalized
 from src.store.repo import BackupRepo
+from src.timezone_utils import now_shanghai
 
 
 
 def _post(post_id: str, raw_hash: str) -> PostNormalized:
-    now = datetime.now(timezone.utc)
+    now = now_shanghai()
     return PostNormalized(
         post_id=post_id,
         post_type="status",

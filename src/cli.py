@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-from datetime import datetime, timezone
 import json
 import logging
 from pathlib import Path
@@ -15,6 +14,7 @@ from src.fetch.follow_feed import FollowFeedFetcher
 from src.service.backup_worker import BackupWorker
 from src.service.reconcile_worker import ReconcileWorker
 from src.store.repo import BackupRepo
+from src.timezone_utils import now_shanghai
 from src.web import run_web_server
 
 
@@ -82,11 +82,11 @@ def cmd_run() -> None:
     reconcile_worker = ReconcileWorker(repo=repo, fetcher=fetcher, alert_dir=settings.alert_dir)
 
     logger.info("服务启动，开始轮询")
-    last_reconcile = datetime.now(timezone.utc).timestamp()
+    last_reconcile = now_shanghai().timestamp()
 
     try:
         while True:
-            started = datetime.now(timezone.utc)
+            started = now_shanghai()
             try:
                 result = backup_worker.run_once()
                 logger.info(
@@ -99,7 +99,7 @@ def cmd_run() -> None:
             except Exception as exc:
                 logger.exception("轮询失败: %s", exc)
 
-            now_ts = datetime.now(timezone.utc).timestamp()
+            now_ts = now_shanghai().timestamp()
             if now_ts - last_reconcile >= settings.reconcile_interval_sec:
                 try:
                     detected = reconcile_worker.run_once(settings.recent_window_min)
@@ -109,7 +109,7 @@ def cmd_run() -> None:
                     logger.exception("回查失败: %s", exc)
                 last_reconcile = now_ts
 
-            elapsed = datetime.now(timezone.utc) - started
+            elapsed = now_shanghai() - started
             sleep_sec = max(0.0, settings.poll_interval_sec - elapsed.total_seconds())
             time.sleep(sleep_sec)
     finally:

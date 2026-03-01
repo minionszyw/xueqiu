@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime
 import hashlib
 import json
 
 from src.models import PostNormalized
+from src.timezone_utils import SHANGHAI_TZ, to_shanghai
 
 
 
@@ -16,10 +17,11 @@ def _to_datetime(value: object) -> datetime | None:
         ts = float(value)
         if ts > 10_000_000_000:
             ts = ts / 1000.0
-        return datetime.fromtimestamp(ts, tz=timezone.utc)
+        return datetime.fromtimestamp(ts, tz=SHANGHAI_TZ)
     if isinstance(value, str):
         try:
-            return datetime.fromisoformat(value.replace("Z", "+00:00"))
+            dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
+            return to_shanghai(dt)
         except ValueError:
             return None
     return None

@@ -1,8 +1,7 @@
-from datetime import datetime, timezone
-
 from src.models import PostNormalized
 from src.service.reconcile_worker import ReconcileWorker
 from src.store.repo import BackupRepo
+from src.timezone_utils import now_shanghai
 
 
 class DummyFetcher:
@@ -15,7 +14,7 @@ class DummyFetcher:
 
 
 def _post(post_id: str) -> PostNormalized:
-    now = datetime.now(timezone.utc)
+    now = now_shanghai()
     return PostNormalized(
         post_id=post_id,
         post_type="status",

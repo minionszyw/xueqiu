@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime
 import json
 import logging
 from pathlib import Path
@@ -11,6 +11,7 @@ from src.fetch.follow_feed import FollowFeedFetcher
 from src.models import PollResult
 from src.parser.normalize import normalize_post
 from src.store.repo import BackupRepo
+from src.timezone_utils import now_shanghai
 
 
 class BackupWorker:
@@ -32,7 +33,7 @@ class BackupWorker:
         self.logger = logging.getLogger("backup")
 
     def run_once(self) -> PollResult:
-        start = datetime.now(timezone.utc)
+        start = now_shanghai()
         cursor = self.repo.get_meta("feed_cursor")
 
         fetched_count = 0
@@ -49,7 +50,7 @@ class BackupWorker:
                 if not items:
                     break
 
-                now = datetime.now(timezone.utc)
+                now = now_shanghai()
                 for raw in items:
                     normalized = normalize_post(raw, captured_at=now)
                     if not normalized:
@@ -71,11 +72,11 @@ class BackupWorker:
             if next_cursor:
                 self.repo.set_meta("feed_cursor", next_cursor)
 
-            finished = datetime.now(timezone.utc)
+            finished = now_shanghai()
             self.repo.add_poll_run(start, finished, fetched_count, new_count, updated_count, True)
             return PollResult(fetched_count, new_count, updated_count, next_cursor)
         except Exception as exc:
-            finished = datetime.now(timezone.utc)
+            finished = now_shanghai()
             self.repo.add_poll_run(start, finished, fetched_count, new_count, updated_count, False, str(exc))
             raise
 
