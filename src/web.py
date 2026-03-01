@@ -18,6 +18,7 @@ class WebApp:
         page = _to_int(_first(query, "page"), default=1, minimum=1)
         per_page = _to_int(_first(query, "per_page"), default=30, minimum=1, maximum=200)
         status = _first(query, "status") or ""
+        post_type = _first(query, "type") or ""
         keyword = _first(query, "q") or ""
 
         offset = (page - 1) * per_page
@@ -25,14 +26,20 @@ class WebApp:
             limit=per_page,
             offset=offset,
             status=status or None,
+            post_type=post_type or None,
             keyword=keyword or None,
         )
-        total = self.repo.count_posts(status=status or None, keyword=keyword or None)
+        total = self.repo.count_posts(
+            status=status or None,
+            post_type=post_type or None,
+            keyword=keyword or None,
+        )
         stats = self.repo.get_stats()
 
         prev_page = page - 1 if page > 1 else 1
         next_page = page + 1 if offset + per_page < total else page
         q_status = html.escape(status)
+        q_type = html.escape(post_type)
         q_keyword = html.escape(keyword)
 
         table_rows = "\n".join(
@@ -40,16 +47,17 @@ class WebApp:
                 "<tr>"
                 f"<td><a href='/post/{html.escape(r['post_id'])}'>{html.escape(r['post_id'])}</a></td>"
                 f"<td>{html.escape(r['author_name'] or '-')}</td>"
-                f"<td>{html.escape(r['post_type'] or '-')}</td>"
-                f"<td>{html.escape(r['visible_status'] or '-')}</td>"
-                f"<td>{html.escape((r['content_text'] or '')[:80])}</td>"
+                f"<td>{_post_type_text(r['post_type'])}</td>"
+                f"<td>{_status_badge(r['visible_status'])}</td>"
+                f"<td><a href='/post/{html.escape(r['post_id'])}'>{html.escape((r['content_text'] or '')[:80]) or '-'}</a></td>"
                 f"<td>{html.escape(r['first_captured_at'] or '-')}</td>"
+                f"<td><a href='/post/{html.escape(r['post_id'])}'>查看详情</a></td>"
                 "</tr>"
             )
             for r in rows
         )
         if not table_rows:
-            table_rows = "<tr><td colspan='6'>暂无数据</td></tr>"
+            table_rows = "<tr><td colspan='7'>暂无数据</td></tr>"
 
         return f"""
 <!doctype html>
@@ -105,12 +113,17 @@ class WebApp:
         <input type='text' name='q' placeholder='搜索作者或正文关键字' value='{q_keyword}'>
         <select name='status'>
           <option value='' {'selected' if status == '' else ''}>全部状态</option>
-          <option value='visible' {'selected' if status == 'visible' else ''}>visible</option>
-          <option value='deleted_suspected' {'selected' if status == 'deleted_suspected' else ''}>deleted_suspected</option>
+          <option value='visible' {'selected' if status == 'visible' else ''}>可见</option>
+          <option value='deleted_suspected' {'selected' if status == 'deleted_suspected' else ''}>疑似删除</option>
+        </select>
+        <select name='type'>
+          <option value='' {'selected' if post_type == '' else ''}>全部类型</option>
+          <option value='status' {'selected' if post_type == 'status' else ''}>动态</option>
+          <option value='long' {'selected' if post_type == 'long' else ''}>长文</option>
+          <option value='retweet' {'selected' if post_type == 'retweet' else ''}>转发回复</option>
         </select>
         <input type='number' name='per_page' min='1' max='200' value='{per_page}'>
         <button type='submit'>筛选</button>
-        <a href='/deletions'>查看删帖事件</a>
       </form>
     </div>
     <div class='card'>
@@ -123,6 +136,7 @@ class WebApp:
             <th>状态</th>
             <th>内容预览</th>
             <th>首次抓取时间</th>
+            <th>操作</th>
           </tr>
         </thead>
         <tbody>
@@ -130,9 +144,9 @@ class WebApp:
         </tbody>
       </table>
       <div class='pager'>
-        <a href='/?page={prev_page}&per_page={per_page}&status={q_status}&q={q_keyword}'>上一页</a>
+        <a href='/?page={prev_page}&per_page={per_page}&status={q_status}&type={q_type}&q={q_keyword}'>上一页</a>
         <span>第 {page} 页 / 共 {max(1, (total + per_page - 1) // per_page)} 页（总 {total} 条）</span>
-        <a href='/?page={next_page}&per_page={per_page}&status={q_status}&q={q_keyword}'>下一页</a>
+        <a href='/?page={next_page}&per_page={per_page}&status={q_status}&type={q_type}&q={q_keyword}'>下一页</a>
       </div>
     </div>
   </div>
@@ -175,8 +189,8 @@ class WebApp:
     <h2>帖子详情</h2>
     <p><b>post_id:</b> {html.escape(row['post_id'])}</p>
     <p><b>作者:</b> {html.escape(row['author_name'] or '-')}</p>
-    <p><b>类型:</b> {html.escape(row['post_type'] or '-')}</p>
-    <p><b>状态:</b> {html.escape(row['visible_status'] or '-')}</p>
+    <p><b>类型:</b> {_post_type_text(row['post_type'])}</p>
+    <p><b>状态:</b> {_status_text(row['visible_status'])}</p>
     <p><b>发布时间:</b> {html.escape(row['created_at'] or '-')}</p>
     <p><b>首次抓取:</b> {html.escape(row['first_captured_at'] or '-')}</p>
     <p><b>最近抓取:</b> {html.escape(row['last_captured_at'] or '-')}</p>
@@ -204,7 +218,7 @@ class WebApp:
             (
                 "<tr>"
                 f"<td><a href='/post/{html.escape(r['post_id'])}'>{html.escape(r['post_id'])}</a></td>"
-                f"<td>{html.escape(r['reason'] or '-')}</td>"
+                f"<td>{_reason_text(r['reason'])}</td>"
                 f"<td>{html.escape(r['last_seen_at'] or '-')}</td>"
                 f"<td>{html.escape(r['detected_at'] or '-')}</td>"
                 "</tr>"
@@ -230,7 +244,7 @@ class WebApp:
   <div class='card'>
     <h2>删帖事件</h2>
     <table>
-      <thead><tr><th>post_id</th><th>reason</th><th>last_seen_at</th><th>detected_at</th></tr></thead>
+      <thead><tr><th>post_id</th><th>原因</th><th>最后可见时间</th><th>检测时间</th></tr></thead>
       <tbody>{body_rows}</tbody>
     </table>
   </div>
@@ -319,3 +333,39 @@ def _to_int(
     if maximum is not None:
         n = min(maximum, n)
     return n
+
+
+def _status_text(status: str | None) -> str:
+    mapping = {
+        "visible": "可见",
+        "deleted_suspected": "疑似删除",
+    }
+    if not status:
+        return "-"
+    return mapping.get(status, status)
+
+
+def _post_type_text(post_type: str | None) -> str:
+    mapping = {
+        "status": "动态",
+        "long": "长文",
+        "retweet": "转发回复",
+    }
+    if not post_type:
+        return "-"
+    return html.escape(mapping.get(post_type, post_type))
+
+
+def _status_badge(status: str | None) -> str:
+    label = html.escape(_status_text(status))
+    cls = "tag-danger" if status == "deleted_suspected" else ""
+    return f"<span class='{cls}'>{label}</span>"
+
+
+def _reason_text(reason: str | None) -> str:
+    mapping = {
+        "missing_from_feed": "关注流缺失",
+    }
+    if not reason:
+        return "-"
+    return html.escape(mapping.get(reason, reason))

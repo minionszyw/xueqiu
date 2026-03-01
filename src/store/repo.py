@@ -199,6 +199,7 @@ class BackupRepo:
         limit: int = 50,
         offset: int = 0,
         status: str | None = None,
+        post_type: str | None = None,
         keyword: str | None = None,
     ) -> list[sqlite3.Row]:
         sql = """
@@ -211,6 +212,9 @@ class BackupRepo:
         if status:
             sql += " AND visible_status = ?"
             params.append(status)
+        if post_type:
+            sql += " AND post_type = ?"
+            params.append(post_type)
         if keyword:
             sql += " AND (author_name LIKE ? OR content_text LIKE ?)"
             like = f"%{keyword}%"
@@ -221,12 +225,20 @@ class BackupRepo:
             rows = conn.execute(sql, params).fetchall()
             return list(rows)
 
-    def count_posts(self, status: str | None = None, keyword: str | None = None) -> int:
+    def count_posts(
+        self,
+        status: str | None = None,
+        post_type: str | None = None,
+        keyword: str | None = None,
+    ) -> int:
         sql = "SELECT COUNT(*) AS c FROM posts WHERE 1=1"
         params: list[object] = []
         if status:
             sql += " AND visible_status = ?"
             params.append(status)
+        if post_type:
+            sql += " AND post_type = ?"
+            params.append(post_type)
         if keyword:
             sql += " AND (author_name LIKE ? OR content_text LIKE ?)"
             like = f"%{keyword}%"
