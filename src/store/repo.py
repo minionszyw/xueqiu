@@ -180,3 +180,98 @@ class BackupRepo:
                 (date_str,),
             ).fetchall()
             return list(rows)
+
+    def get_stats(self) -> dict[str, int]:
+        with self.connect() as conn:
+            posts = conn.execute("SELECT COUNT(*) AS c FROM posts").fetchone()["c"]
+            snapshots = conn.execute("SELECT COUNT(*) AS c FROM post_snapshots").fetchone()["c"]
+            deletions = conn.execute("SELECT COUNT(*) AS c FROM deletion_events").fetchone()["c"]
+            polls = conn.execute("SELECT COUNT(*) AS c FROM poll_runs").fetchone()["c"]
+            return {
+                "posts": int(posts),
+                "snapshots": int(snapshots),
+                "deletions": int(deletions),
+                "poll_runs": int(polls),
+            }
+
+    def list_posts(
+        self,
+        limit: int = 50,
+        offset: int = 0,
+        status: str | None = None,
+        keyword: str | None = None,
+    ) -> list[sqlite3.Row]:
+        sql = """
+            SELECT post_id, post_type, author_name, first_captured_at, last_captured_at,
+                   visible_status, content_text
+            FROM posts
+            WHERE 1=1
+        """
+        params: list[object] = []
+        if status:
+            sql += " AND visible_status = ?"
+            params.append(status)
+        if keyword:
+            sql += " AND (author_name LIKE ? OR content_text LIKE ?)"
+            like = f"%{keyword}%"
+            params.extend([like, like])
+        sql += " ORDER BY first_captured_at DESC LIMIT ? OFFSET ?"
+        params.extend([limit, offset])
+        with self.connect() as conn:
+            rows = conn.execute(sql, params).fetchall()
+            return list(rows)
+
+    def count_posts(self, status: str | None = None, keyword: str | None = None) -> int:
+        sql = "SELECT COUNT(*) AS c FROM posts WHERE 1=1"
+        params: list[object] = []
+        if status:
+            sql += " AND visible_status = ?"
+            params.append(status)
+        if keyword:
+            sql += " AND (author_name LIKE ? OR content_text LIKE ?)"
+            like = f"%{keyword}%"
+            params.extend([like, like])
+        with self.connect() as conn:
+            row = conn.execute(sql, params).fetchone()
+            return int(row["c"])
+
+    def get_post(self, post_id: str) -> sqlite3.Row | None:
+        with self.connect() as conn:
+            row = conn.execute(
+                """
+                SELECT post_id, post_type, author_id, author_name, created_at,
+                       first_captured_at, last_captured_at, content_text, content_html,
+                       source_post_id, visible_status, raw_hash
+                FROM posts
+                WHERE post_id = ?
+                """,
+                (post_id,),
+            ).fetchone()
+            return row
+
+    def list_post_snapshots(self, post_id: str, limit: int = 20) -> list[sqlite3.Row]:
+        with self.connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT id, captured_at, raw_hash
+                FROM post_snapshots
+                WHERE post_id = ?
+                ORDER BY captured_at DESC
+                LIMIT ?
+                """,
+                (post_id, limit),
+            ).fetchall()
+            return list(rows)
+
+    def list_deletion_events(self, limit: int = 100) -> list[sqlite3.Row]:
+        with self.connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT post_id, detected_at, reason, last_seen_at
+                FROM deletion_events
+                ORDER BY detected_at DESC
+                LIMIT ?
+                """,
+                (limit,),
+            ).fetchall()
+            return list(rows)

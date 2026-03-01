@@ -15,6 +15,7 @@ from src.fetch.follow_feed import FollowFeedFetcher
 from src.service.backup_worker import BackupWorker
 from src.service.reconcile_worker import ReconcileWorker
 from src.store.repo import BackupRepo
+from src.web import run_web_server
 
 
 
@@ -128,6 +129,13 @@ def cmd_export(date_str: str, fmt: str) -> None:
         print(json.dumps(dict(row), ensure_ascii=False))
 
 
+def cmd_web(host: str, port: int) -> None:
+    settings = load_settings()
+    repo = BackupRepo(settings.db_path)
+    repo.init_db()
+    run_web_server(repo=repo, host=host, port=port)
+
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="雪球关注内容备份")
@@ -144,6 +152,10 @@ def parse_args() -> argparse.Namespace:
     p_export.add_argument("--date", required=True, help="YYYY-MM-DD")
     p_export.add_argument("--format", default="jsonl")
 
+    p_web = sub.add_parser("web")
+    p_web.add_argument("--host", default="127.0.0.1")
+    p_web.add_argument("--port", type=int, default=8765)
+
     return parser.parse_args()
 
 
@@ -158,6 +170,8 @@ def main() -> None:
         cmd_run()
     elif args.cmd == "export":
         cmd_export(args.date, args.format)
+    elif args.cmd == "web":
+        cmd_web(args.host, args.port)
     else:
         raise ValueError(f"未知命令: {args.cmd}")
 

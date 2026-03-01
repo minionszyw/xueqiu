@@ -6,6 +6,7 @@ __pycache__/
 .env
 cookies.json
 logs/*.log
+.run/
 data/backup.db
 data/backup.db-shm
 data/backup.db-wal
