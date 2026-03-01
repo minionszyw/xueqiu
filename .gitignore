@@ -2,9 +2,14 @@
 __pycache__/
 .pytest_cache/
 *.pyc
+.DS_Store
 .env
 cookies.json
 logs/*.log
 data/backup.db
+data/backup.db-shm
+data/backup.db-wal
+data/*.db-shm
+data/*.db-wal
 data/raw/
 data/alerts/

@@ -16,15 +16,21 @@ class FollowFeedFetcher:
             params["max_id"] = cursor
 
         payload = self.client.get_json(self.feed_path, params=params)
-        items = payload.get("list") or payload.get("statuses") or []
-        if not isinstance(items, list):
+        if isinstance(payload, list):
+            items = payload
+            next_cursor = None
+        elif isinstance(payload, dict):
+            items = payload.get("list") or payload.get("statuses") or []
+            if not isinstance(items, list):
+                items = []
+            next_cursor = (
+                payload.get("next_max_id")
+                or payload.get("max_id")
+                or payload.get("next_id")
+            )
+        else:
             items = []
-
-        next_cursor = (
-            payload.get("next_max_id")
-            or payload.get("max_id")
-            or payload.get("next_id")
-        )
+            next_cursor = None
         if next_cursor is not None:
             next_cursor = str(next_cursor)
         return items, next_cursor

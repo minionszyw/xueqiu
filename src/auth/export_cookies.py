@@ -14,7 +14,11 @@ except ImportError as exc:  # pragma: no cover
 
 def export_cookies(output: Path) -> None:
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False)
+        try:
+            # 优先使用本机已安装的 Chrome，避免必须下载 Playwright Chromium。
+            browser = p.chromium.launch(channel="chrome", headless=False)
+        except Exception:
+            browser = p.chromium.launch(headless=False)
         context = browser.new_context()
         page = context.new_page()
         page.goto("https://xueqiu.com", wait_until="domcontentloaded")

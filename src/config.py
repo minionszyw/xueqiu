@@ -40,7 +40,7 @@ def load_settings() -> Settings:
     load_dotenv()
 
     base_url = os.getenv("XUEQIU_BASE_URL", "https://xueqiu.com")
-    feed_path = os.getenv("XUEQIU_FEED_PATH", "/statuses/friends/timeline.json")
+    feed_path = os.getenv("XUEQIU_FEED_PATH", "/statuses/home_timeline.json")
 
     settings = Settings(
         base_url=base_url.rstrip("/"),

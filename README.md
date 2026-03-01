@@ -42,7 +42,7 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 uv sync
 ```
 
-如需使用浏览器导出 Cookie：
+安装导出 Cookie 依赖：
 
 ```bash
 uv sync --extra browser
@@ -50,8 +50,16 @@ uv sync --extra browser
 
 ### 2. 配置环境变量（可复制 `.env.example` 到 `.env`）
 
+macOS / Linux:
+
 ```bash
 cp .env.example .env
+```
+
+Windows（PowerShell）:
+
+```powershell
+Copy-Item .env.example .env
 ```
 
 ### 3. 初始化数据库
@@ -62,6 +70,14 @@ uv run python -m src.cli init-db
 
 ### 4. 导入 Cookie 并检查登录态
 
+先导出 Cookie（已支持优先使用本机 Chrome）：
+
+```bash
+uv run python -m src.auth.export_cookies
+```
+
+再检查登录态：
+
 ```bash
 uv run python -m src.cli check-auth --cookie-file cookies.json
 ```
@@ -71,6 +87,16 @@ uv run python -m src.cli check-auth --cookie-file cookies.json
 ```bash
 uv run python -m src.cli run
 ```
+
+### 6. 验证是否抓取成功
+
+新开一个终端执行：
+
+```bash
+sqlite3 data/backup.db "select count(*) as posts from posts; select count(*) as snapshots from post_snapshots;"
+```
+
+如果 `posts > 0` 且 `snapshots > 0`，说明抓取和落盘正常。
 
 ## 目录
 
@@ -136,7 +162,7 @@ uv run python -m src.cli run
 
 ### 数据来源
 
-- 使用登录账号的关注流接口：`/statuses/friends/timeline.json`
+- 使用登录账号的关注流接口：`/statuses/home_timeline.json`
 - 不需要在项目内单独维护关注名单
 - 关注对象由雪球账号本身决定（在雪球里关注/取关即可生效）
 
@@ -153,3 +179,65 @@ uv run python -m src.cli run
 - 回查最近 `30` 分钟内容（`RECENT_WINDOW_MIN`）
 - 若“曾可见内容”在最新关注流中缺失，标记为 `deleted_suspected`
 - 同步写入 `deletion_events` 与 `data/alerts/YYYY-MM-DD.log`
+
+## 删帖通知
+
+### 触发规则
+
+- 内容曾经被抓取并处于 `visible`
+- 在回查窗口内，该内容不再出现在最新关注流
+- 系统将其标记为 `deleted_suspected`
+
+### 通知与记录位置
+
+- 数据库事件表：`deletion_events`
+- 内容状态字段：`posts.visible_status`
+- 本地通知日志：`data/alerts/YYYY-MM-DD.log`（每行一条 JSON）
+
+### 快速查看
+
+查看最近删帖事件：
+
+```bash
+sqlite3 data/backup.db "select post_id, detected_at, reason from deletion_events order by detected_at desc limit 20;"
+```
+
+查看今日告警日志：
+
+```bash
+tail -n 20 data/alerts/$(date +%F).log
+```
+
+Windows（PowerShell）查看今日告警日志：
+
+```powershell
+Get-Content .\\data\\alerts\\$(Get-Date -Format yyyy-MM-dd).log -Tail 20
+```
+
+## 常见问题
+
+### 1) `Cookie 文件不存在: cookies.json`
+
+先执行：
+
+```bash
+uv run python -m src.auth.export_cookies
+```
+
+登录后回车生成 `cookies.json`，再执行 `check-auth`。
+
+### 2) 运行时报接口 404
+
+确认 `.env` 里是：
+
+```bash
+XUEQIU_FEED_PATH=/statuses/home_timeline.json
+```
+
+### 3) Playwright 提示找不到浏览器
+
+脚本会优先使用本机 Chrome。若本机没有可用 Chrome，再安装浏览器内核：
+
+```bash
+uv run playwright install chromium
+```

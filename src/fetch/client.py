@@ -23,7 +23,7 @@ class XueqiuClient:
     def close(self) -> None:
         self.client.close()
 
-    def get_json(self, path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+    def get_json(self, path: str, params: dict[str, Any] | None = None) -> Any:
         last_exc: Exception | None = None
         for attempt in range(1, self.retry_times + 1):
             try:
@@ -33,8 +33,6 @@ class XueqiuClient:
                 if resp.status_code != 200:
                     raise RuntimeError(f"接口请求失败: {resp.status_code}, body={resp.text[:200]}")
                 data = resp.json()
-                if not isinstance(data, dict):
-                    raise RuntimeError("接口返回非对象 JSON")
                 return data
             except Exception as exc:
                 last_exc = exc
