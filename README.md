@@ -58,6 +58,26 @@
 - `/deletions`：删帖事件列表
 - `/api/stats`：JSON 统计接口
 
+## 一键部署（推荐）
+
+适合小白用户：自动检查环境、安装依赖、引导导出 Cookie、校验登录态、初始化数据库、后台启动备份与 Web 服务。
+
+### macOS / Linux
+
+```bash
+./scripts/deploy.sh
+```
+
+### Windows（PowerShell）
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\\scripts\\deploy.ps1
+```
+
+部署完成后默认访问：
+
+- `http://127.0.0.1:8765/`
+
 ## 快速开始
 
 ### macOS / Linux
@@ -215,6 +235,7 @@ sqlite3 data/backup.db "select count(*) as posts from posts; select count(*) as 
 xueqiu/
 ├── src/              # 核心业务代码（抓取、解析、存储、服务、Web）
 ├── tests/            # 单元测试
+├── scripts/          # 一键部署与服务管理脚本（sh/ps1）
 ├── data/             # 本地数据目录（SQLite、原始快照、删帖告警）
 ├── logs/             # 运行日志
 ├── .env.example      # 环境变量模板
@@ -257,6 +278,28 @@ xueqiu/
 - 用途：保存系统运行状态（如游标）
 - 关键字段：`key`、`value`、`updated_at`
 - 当前主要用于：`feed_cursor`
+
+## 服务管理命令
+
+### macOS / Linux
+
+```bash
+./scripts/manage.sh status
+./scripts/manage.sh start
+./scripts/manage.sh stop
+./scripts/manage.sh restart
+./scripts/manage.sh logs
+```
+
+### Windows（PowerShell）
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\\scripts\\manage.ps1 status
+powershell -ExecutionPolicy Bypass -File .\\scripts\\manage.ps1 start
+powershell -ExecutionPolicy Bypass -File .\\scripts\\manage.ps1 stop
+powershell -ExecutionPolicy Bypass -File .\\scripts\\manage.ps1 restart
+powershell -ExecutionPolicy Bypass -File .\\scripts\\manage.ps1 logs
+```
 
 ## 常用命令
 
@@ -320,3 +363,11 @@ uv run playwright install chromium
 - 先确认 Web 已启动：`uv run python -m src.cli web`
 - 检查地址是否正确：`http://127.0.0.1:8765`
 - 若端口冲突，换端口：`uv run python -m src.cli web --port 8877`
+
+### 6) 一键部署提示 `uv` 或 `python` 不存在
+
+- 先安装 Python 3.11+
+- 再安装 uv
+- 安装后重新打开终端，再执行：
+  - macOS/Linux：`./scripts/deploy.sh`
+  - Windows：`powershell -ExecutionPolicy Bypass -File .\\scripts\\deploy.ps1`
