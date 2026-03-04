@@ -10,6 +10,17 @@
 
 本项目用于自动抓取你账号的关注流内容并本地落盘，尽量在分钟级完成首次备份，降低删帖导致的内容丢失风险。
 
+## 技术栈
+
+- 语言：`Python 3.11+`
+- 抓取与请求：`httpx`
+- 登录态导出：`Playwright`（仅用于导出 Cookie）
+- 存储：`SQLite`（`sqlite3`）
+- Web 展示：Python 标准库 `http.server`
+- 配置：`python-dotenv`
+- 测试：`pytest`、`pytest-cov`
+- 依赖管理：`uv`
+
 ## 功能介绍
 
 ### 1) 关注流
@@ -29,6 +40,7 @@
 - 入库顺序：先写 `post_snapshots`，再更新 `posts`
 - 支持重启续跑（`meta_kv.feed_cursor`）
 - 时间统一使用 `Asia/Shanghai`（`+08:00`）时区
+- 快照默认只保留最近 `30` 天，可通过 `SNAPSHOT_RETENTION_DAYS` 调整
 
 ### 3) 删帖通知
 
@@ -196,17 +208,6 @@ sqlite3 data/backup.db "select count(*) as posts from posts; select count(*) as 
 - 统计接口：`http://127.0.0.1:8765/api/stats`
 
 如果使用了自定义 `--host` 或 `--port`，请按实际地址替换。
-
-## 技术栈
-
-- 语言：`Python 3.11+`
-- 抓取与请求：`httpx`
-- 登录态导出：`Playwright`（仅用于导出 Cookie）
-- 存储：`SQLite`（`sqlite3`）
-- Web 展示：Python 标准库 `http.server`
-- 配置：`python-dotenv`
-- 测试：`pytest`、`pytest-cov`
-- 依赖管理：`uv`
 
 ## 目录结构
 

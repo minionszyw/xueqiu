@@ -58,6 +58,20 @@ class BackupRepo:
                 (post_id, captured_at.isoformat(), json.dumps(raw, ensure_ascii=False), raw_hash),
             )
 
+    def prune_old_snapshots(self, retention_days: int) -> int:
+        if retention_days <= 0:
+            return 0
+        threshold = (local_now() - timedelta(days=retention_days)).isoformat()
+        with self.connect() as conn:
+            cursor = conn.execute(
+                """
+                DELETE FROM post_snapshots
+                WHERE datetime(captured_at) < datetime(?)
+                """,
+                (threshold,),
+            )
+            return int(cursor.rowcount or 0)
+
     def upsert_post(self, post: PostNormalized) -> tuple[bool, bool]:
         payload = asdict(post)
         with self.connect() as conn:

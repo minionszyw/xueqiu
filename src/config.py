@@ -23,6 +23,7 @@ class Settings:
     http_backoff_base_sec: float
     reconcile_interval_sec: int
     recent_window_min: int
+    snapshot_retention_days: int
     request_jitter_pct: float
     raw_archive_enabled: bool
     user_agent: str
@@ -57,6 +58,7 @@ def load_settings() -> Settings:
         http_backoff_base_sec=float(os.getenv("HTTP_BACKOFF_BASE_SEC", "0.5")),
         reconcile_interval_sec=int(os.getenv("RECONCILE_INTERVAL_SEC", "120")),
         recent_window_min=int(os.getenv("RECENT_WINDOW_MIN", "30")),
+        snapshot_retention_days=int(os.getenv("SNAPSHOT_RETENTION_DAYS", "30")),
         request_jitter_pct=float(os.getenv("REQUEST_JITTER_PCT", "0.1")),
         raw_archive_enabled=_as_bool(os.getenv("RAW_ARCHIVE_ENABLED"), True),
         user_agent=os.getenv(

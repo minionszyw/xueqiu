@@ -1,6 +1,7 @@
 from src.models import PostNormalized
 from src.store.repo import BackupRepo
 from src.timezone_utils import now_shanghai
+from datetime import timedelta
 
 
 
@@ -55,3 +56,23 @@ def test_mark_missing_once(tmp_path) -> None:
 
     assert inserted1 is True
     assert inserted2 is False
+
+
+def test_prune_old_snapshots(tmp_path) -> None:
+    db_path = tmp_path / "test.db"
+    repo = BackupRepo(db_path)
+    repo.init_db()
+
+    now = now_shanghai()
+    old_ts = now - timedelta(days=31)
+    new_ts = now - timedelta(days=1)
+
+    repo.write_snapshot("p-old", old_ts, {"id": "p-old"}, "h1")
+    repo.write_snapshot("p-new", new_ts, {"id": "p-new"}, "h2")
+
+    deleted = repo.prune_old_snapshots(30)
+    assert deleted == 1
+
+    with repo.connect() as conn:
+        count = conn.execute("SELECT COUNT(*) AS c FROM post_snapshots").fetchone()["c"]
+        assert count == 1

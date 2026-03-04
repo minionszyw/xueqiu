@@ -83,6 +83,10 @@ def cmd_run() -> None:
 
     logger.info("服务启动，开始轮询")
     last_reconcile = now_shanghai().timestamp()
+    # 启动时先做一次快照清理，防止历史数据无限增长。
+    pruned = repo.prune_old_snapshots(settings.snapshot_retention_days)
+    if pruned:
+        logger.info("启动清理快照 %s 条（保留最近 %s 天）", pruned, settings.snapshot_retention_days)
 
     try:
         while True:
@@ -105,6 +109,9 @@ def cmd_run() -> None:
                     detected = reconcile_worker.run_once(settings.recent_window_min)
                     if detected:
                         logger.warning("检测到疑似删除内容 %s 条", detected)
+                    pruned = repo.prune_old_snapshots(settings.snapshot_retention_days)
+                    if pruned:
+                        logger.info("清理过期快照 %s 条（保留最近 %s 天）", pruned, settings.snapshot_retention_days)
                 except Exception as exc:
                     logger.exception("回查失败: %s", exc)
                 last_reconcile = now_ts
